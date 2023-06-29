@@ -75,7 +75,7 @@ def create_video():
     start_time = time.time()  # Start timing the transcoding process
     title = f"videos/1_{str(uuid.uuid4())}_{video_counter}.mp4"
     # -threads 8
-    command = f"/opt/homebrew/bin/ffmpeg -y -r 1 -pattern_type glob -i 'tmp_images/{video_counter}_image_*.jpg' -c:v libx264 -preset superfast " + title
+    command = f"./ffmpeg -y -r 1 -pattern_type glob -i 'tmp_images/{video_counter}_image_*.jpg' -c:v libx264 -preset superfast " + title
     subprocess.run(command, shell=True, stdout=subprocess.DEVNULL,
                    stderr=subprocess.DEVNULL)
 

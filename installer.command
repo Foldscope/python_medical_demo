@@ -1,7 +1,7 @@
 #!/bin/bash
 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-/opt/homebrew/bin/brew install ffmpeg
+#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+#/opt/homebrew/bin/brew install ffmpeg
 # Check if Python is installed
 if ! command -v python3 &>/dev/null; then
     echo "Python not found. Installing Python..."    
