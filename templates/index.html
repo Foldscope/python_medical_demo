@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Foldscope Scan Demo</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+        
+        h1 {
+            margin-bottom: 1em;
+        }
+        
+        .logo {
+            display: none;  /* Hide the logo initially */
+            image-orientation: from-image;
+            max-height: 200px;
+            width: auto;
+            height: auto;
+            margin-bottom: 8em;
+            margin-top: 8em;
+        }
+        
+        #scan-button {
+            padding: 1em 2em;
+            font-size: 1.2em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1em;
+        }
+        
+        #scan-button .loader {
+            display: none;
+        }
+        
+        #placeholder {
+            width: 300px;
+            height: 200px;
+            background-color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 1em;
+        }
+        
+        .toggle-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1em;
+        }
+        
+        .toggle-button input {
+            display: none;
+        }
+        
+        .toggle-button label {
+            background-color: #ddd;
+            border-radius: 20px;
+            padding: 0.5em 1em;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .toggle-button label:before {
+            content: "Demo Video";
+            color: #555;
+            transition: 0.2s;
+        }
+        
+        .toggle-button input:checked + label {
+            background-color: #4CAF50;
+        }
+        
+        .toggle-button input:checked + label:before {
+            content: "Live";
+            color: white;
+        }
+        
+        .stats-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            width: 300px;
+            margin-bottom: 1em;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: .8em;
+        }
+        
+        .stat-item label {
+            margin-top: 0.5em;
+            font-size: 1.2em;
+        }
+        
+        @keyframes spin {
+             0% { transform: rotate(0deg); }
+             100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Scan Demo</h1>
+    <div class="stats-container">
+        <div class="stat-item">
+            <div id="capture-stat">0</div>
+            <label for="capture-stat">Capture</label>
+        </div>
+        <div class="stat-item">
+            <div id="encode-stat">0</div>
+            <label for="encode-stat">Encode</label>
+        </div>
+        <div class="stat-item">
+            <div id="upload-stat">0</div>
+            <label for="upload-stat">Upload</label>
+        </div>
+    </div>
+    <div id="placeholder"> <!-- Added the grey rectangle -->
+    <video id="video-player" autoplay loop class="logo"></video>
+</div> 
+    <div class="toggle-button">
+        <input type="checkbox" id="toggle" onchange="toggleMode()">
+        <label for="toggle"></label>
+    </div>
+    <button id="scan-button" onclick="toggleScan()">Start Scan</button>
+    
+    <script>
+        var scanButton = document.getElementById('scan-button');
+        var videoPlayer = document.getElementById('video-player');
+        var placeholder = document.getElementById('placeholder');
+        var captureStat = document.getElementById('capture-stat');
+        var encodeStat = document.getElementById('encode-stat');
+        var uploadStat = document.getElementById('upload-stat');
+        var scanActive = false;
+        var scanInterval;
+        
+        function startScan() {
+            fetch(toggle.checked ? '/scan' : '/scan_demo')
+                .then(response => response.blob())  // Convert the response to a Blob object
+                .then(blob => {
+                    // Create an object URL from the Blob
+                    if (scanActive) {
+                        startScan();
+                    } else {
+                        scanButton.textContent = 'Start Scan';
+                    }
+                    const videoUrl = URL.createObjectURL(blob);
+                    console.log(videoUrl)
+                    videoPlayer.src = videoUrl;
+                    videoPlayer.style.display = 'block';
+                    // placeholder.style.display = 'none';  // Hide the placeholder
+                    // Release the object URL when the video has ended
+                    videoPlayer.addEventListener('ended', () => {
+                        URL.revokeObjectURL(videoUrl);
+                    });
+                    stats()
+                });
+        }
+
+        function stats() {
+            fetch('/stats')
+                .then(response => response.json())  // Assuming the response is in JSON format
+                .then(data => {
+                        // Update the stats with the received data
+                        captureStat.textContent = data.capture || '0';
+                        encodeStat.textContent = data.encode || '0';
+                        uploadStat.textContent = data.upload || '0';
+                })
+                .catch(error => {
+                    console.error('Scan request failed:', error);
+                });
+        }
+        
+        function toggleScan() {
+            if (scanActive) {
+                scanActive = false;
+                scanButton.textContent = 'Start Scan';
+            } else {
+                scanActive = true;
+                scanButton.textContent = 'Stop Scan';
+                startScan();
+            }
+        }
+        
+        function toggleMode() {
+            var toggle = document.getElementById('toggle');
+            if (toggle.checked) {
+                // Switch to demo mode
+                // Perform actions specific to demo mode
+            } else {
+                // Switch to live mode
+                // Perform actions specific to live mode
+            }
+        }
+    </script>
+</body>
+</html>
