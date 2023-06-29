@@ -174,10 +174,11 @@ def stats():
 
 def upload_video(path):
 
-    upload_endpoint = f"https://9ev5bqs5n3.execute-api.us-east-1.amazonaws.com/dev-stage/foldscope-lambda-ml-upload-inference/{path.split('/')[-1]}"
+    upload_endpoint = f"https://l10ah500d2.execute-api.us-east-1.amazonaws.com/Demo/infer"
     start_time = time.time()  # Start timing the upload process
     with open(path, 'rb') as video_file:
-        response = requests.put(upload_endpoint, data=video_file)
+        headers = {"filename": path.split('/')[-1]}  # Create the header
+        response = requests.post(upload_endpoint, data=video_file, headers=headers)
         if response.status_code == 200:
             # print("Video uploaded successfully")
             pass
