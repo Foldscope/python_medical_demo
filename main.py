@@ -107,7 +107,7 @@ def copy_images(num_images):
     # Calculate the total number of images to capture
     for i in range(num_images):
         # Read a frame from the camera
-        file_name = f"sample_{str(random.randint(1, 100)).zfill(4)}.jpeg"
+        file_name = f"sample_{str(random.randint(1, 35)).zfill(4)}.jpeg"
 
         # Copy the random image file to the destination folder
         source_path = os.path.join("sample_video", file_name)
