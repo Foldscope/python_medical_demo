@@ -14,12 +14,22 @@ import logging
 from pathlib import Path
 import shutil
 import random
+import sys
+
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 capture_time = "Never captured"
 encode_time = "Never encoded"
-upload_time = "Never uploaded"
+inference_time = "Never uploaded"
+inference_time = "Never processed"
+inference_num = 0
+upload_num = 1
+file_size = "Never uploaded"
+num_files = 8
+image_data = None
+
+
 
 video_counter = 1  # Track the video counter
 
@@ -74,8 +84,7 @@ def create_video():
     global video_counter
     start_time = time.time()  # Start timing the transcoding process
     title = f"videos/1_{str(uuid.uuid4())}_{video_counter}.mp4"
-    # -threads 8
-    command = f"./ffmpeg -y -r 1 -pattern_type glob -i 'tmp_images/{video_counter}_image_*.jpg' -c:v libx264 -preset superfast " + title
+    command = f"./ffmpeg -y -r 1 -pattern_type glob -i 'tmp_images/{video_counter}_image_*.jpg' -c:v libx264 -preset superfast -b:v 300k " + title
     subprocess.run(command, shell=True, stdout=subprocess.DEVNULL,
                    stderr=subprocess.DEVNULL)
 
@@ -134,8 +143,8 @@ def index():
 
 @app.route('/scan')
 def scan():
-
-    capture_images(num_images=30, interval=.01)
+    global num_files
+    capture_images(num_images=num_files, interval=.01)
 
     path = create_video()
 
@@ -149,7 +158,9 @@ def scan():
 @app.route('/scan_demo')
 def scan_demo():
 
-    copy_images(num_images=30)
+    global num_files
+
+    copy_images(num_images=num_files)
 
     path = create_video()
 
@@ -164,31 +175,57 @@ def scan_demo():
 def stats():
     global capture_time
     global encode_time
-    global upload_time
+    global file_size
+    global num_files
+    global image_data
+    global upload_num
+    global inference_num
+    global inference_time
     return {
         "capture": capture_time,
         "encode": encode_time,
-        "upload": upload_time,
+        "size": file_size,
+        "images_num": num_files,
+        "inference_time": inference_time,
+        "inference_num": inference_num,
+        "upload_num": upload_num,
+        "image_data": image_data
     }
 
 
 def upload_video(path):
+    global upload_num
+    upload_num += 1
+
+    global file_size
+    file_size = str(round(os.path.getsize(path) / (1024 * 1024),2)) + " MB"
 
     upload_endpoint = f"https://l10ah500d2.execute-api.us-east-1.amazonaws.com/Demo/infer"
     start_time = time.time()  # Start timing the upload process
     with open(path, 'rb') as video_file:
         headers = {"filename": path.split('/')[-1]}  # Create the header
-        response = requests.post(upload_endpoint, data=video_file, headers=headers)
-        if response.status_code == 200:
-            # print("Video uploaded successfully")
-            pass
-        else:
-            print("Failed to upload video")
+        try:
+            response = requests.post(upload_endpoint, data=video_file, headers=headers, timeout=100)
+
+            if response.status_code == 200:
+                global image_data
+                image_data = response.json()['image']
+                
+                global inference_num
+                inference_num += 1
+
+                global inference_time
+                end_time = time.time()  # Stop timing the video creation process
+                inference_duration = end_time - start_time
+                inference_time = f"{inference_duration:.2f} seconds"
+
+            else:
+                print("Failed to upload video")
+        except Exception as e:
+            print(e)
     end_time = time.time()  # Stop timing the upload process
     upload_duration = end_time - start_time
 
-    global upload_time
-    upload_time = f"{upload_duration:.2f} seconds"
     # print(f"Upload duration: {upload_duration:.2f} seconds")
 
 
@@ -202,18 +239,19 @@ if __name__ == '__main__':
     for filename in Path(".").glob("videos/*.mp4"):
         os.remove(filename)
     # Start the Flask server
-    subprocess.Popen(
-        '''sleep 2 && osascript <<EOF
-        tell application "Safari"
-            activate
-            delay 1
-            tell application "System Events"
-                keystroke "n" using {command down, shift down}
+    if sys.platform == "darwin" and False:  # Check if the operating system is macOS
+        subprocess.Popen(
+            '''sleep 2 && osascript <<EOF
+            tell application "Safari"
+                activate
+                delay 1
+                tell application "System Events"
+                    keystroke "n" using {command down, shift down}
+                end tell
+                delay 1
+                set URL of front document to "http://127.0.0.1:5000"
             end tell
-            delay 1
-            set URL of front document to "http://127.0.0.1:5000"
-        end tell
-        EOF''',
-        shell=True
-    )
+            EOF''',
+            shell=True
+        )
     app.run(debug=False)

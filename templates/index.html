@@ -5,12 +5,14 @@
     <style>
         body {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: space-evenly;
             height: 100vh;
             font-family: Arial, sans-serif;
             background-color: #f2f2f2;
+            padding-top: 10em;
+
         }
         
         h1 {
@@ -93,22 +95,52 @@
         
         .stats-container {
             display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-right: 1em;
+            width: 10em;
+        }
+
+        .demo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stats-and-video {
+            display: flex;
             flex-direction: row;
-            justify-content: space-around;
-            width: 300px;
-            margin-bottom: 1em;
+            align-items: center;
         }
         
         .stat-item {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             font-size: .8em;
+            margin-bottom: 1em;
         }
         
         .stat-item label {
+            display: flex;
             margin-top: 0.5em;
             font-size: 1.2em;
+            margin-right: .5em;
+            width: 10em;
+            justify-content: flex-end;
+        }
+        .stat-item div {
+            margin-top: 0.5em;
+            font-size: 1.2em;
+            margin-right: .5em;
+            width: 8em;
+        }
+
+        #inference_example {
+            max-width: 300px;
+            max-height: 200px;
+            width: auto;
+            height: auto;
         }
         
         @keyframes spin {
@@ -118,37 +150,73 @@
     </style>
 </head>
 <body>
-    <h1>Scan Demo</h1>
-    <div class="stats-container">
-        <div class="stat-item">
-            <div id="capture-stat">0</div>
-            <label for="capture-stat">Capture</label>
+    <div class="demo-container">
+        <h1>Scanner</h1>
+        <div class="stats-and-video">
+        <div class="stats-container">
+            <div class="stat-item">
+                <label for="num-stat"># Images: </label>
+                <div id="num-stat">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="capture-stat">Capture Time: </label>
+                <div id="capture-stat">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="encode-stat">Encoding Time: </label>
+                <div id="encode-stat">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="size-stat">Upload Size: </label>
+                <div id="size-stat">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="upload-num"># Uploaded: </label>
+                <div id="upload-num">0</div>
+            </div>
         </div>
-        <div class="stat-item">
-            <div id="encode-stat">0</div>
-            <label for="encode-stat">Encode</label>
-        </div>
-        <div class="stat-item">
-            <div id="upload-stat">0</div>
-            <label for="upload-stat">Upload</label>
+        <div id="placeholder"> <!-- Added the grey rectangle -->
+            <video id="video-player" autoplay loop class="logo"></video>
         </div>
     </div>
-    <div id="placeholder"> <!-- Added the grey rectangle -->
-    <video id="video-player" autoplay loop class="logo"></video>
-</div> 
-    <div class="toggle-button">
-        <input type="checkbox" id="toggle" onchange="toggleMode()">
-        <label for="toggle"></label>
+        <div class="toggle-button">
+            <input type="checkbox" id="toggle" onchange="toggleMode()">
+            <label for="toggle"></label>
+        </div>
+        <button id="scan-button" onclick="toggleScan()">Start Scan</button>
     </div>
-    <button id="scan-button" onclick="toggleScan()">Start Scan</button>
-    
+    <div class="demo-container">
+        <h1>Results</h1>
+        <div class="stats-and-video">
+        <div class="stats-container">
+            <div class="stat-item">
+                <label for="inference-stat">Inference Time: </label>
+                <div id="inference-time">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="inference-stat">Inference Number: </label>
+                <div id="inference-num">0</div>
+            </div>
+            
+        </div>
+        <div id="placeholder">
+            <image id="inference_example" /> <!-- Replace this image -->
+        </div>
+    </div>
+    </div>
     <script>
         var scanButton = document.getElementById('scan-button');
         var videoPlayer = document.getElementById('video-player');
         var placeholder = document.getElementById('placeholder');
         var captureStat = document.getElementById('capture-stat');
+        var sizeStat = document.getElementById('size-stat');
+        var numStat = document.getElementById('num-stat');
         var encodeStat = document.getElementById('encode-stat');
-        var uploadStat = document.getElementById('upload-stat');
+
+        var uploadNum = document.getElementById('upload-num');
+        var inferenceNum = document.getElementById('inference-num');
+        var inferenceTime = document.getElementById('inference-time');
+
         var scanActive = false;
         var scanInterval;
         
@@ -182,7 +250,13 @@
                         // Update the stats with the received data
                         captureStat.textContent = data.capture || '0';
                         encodeStat.textContent = data.encode || '0';
-                        uploadStat.textContent = data.upload || '0';
+                        // uploadStat.textContent = data.upload || '0';
+                        sizeStat.textContent = data.size || '0';
+                        numStat.textContent = data.images_num || '0';
+                        uploadNum.textContent = data.upload_num || '0';
+                        inferenceNum.textContent = data.inference_num || '0';
+                        inferenceTime.textContent = data.inference_time || '0';
+                        document.getElementById('inference_example').src = 'data:image/jpg;base64,' + data.image_data;
                 })
                 .catch(error => {
                     console.error('Scan request failed:', error);
@@ -200,16 +274,6 @@
             }
         }
         
-        function toggleMode() {
-            var toggle = document.getElementById('toggle');
-            if (toggle.checked) {
-                // Switch to demo mode
-                // Perform actions specific to demo mode
-            } else {
-                // Switch to live mode
-                // Perform actions specific to live mode
-            }
-        }
     </script>
 </body>
 </html>
