@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Foldscope Scan Demo</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: space-evenly;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            padding-top: 10em;
+
+        }
+        
+        h1 {
+            margin-bottom: 1em;
+        }
+        
+        .logo {
+            display: none;  /* Hide the logo initially */
+            image-orientation: from-image;
+            max-height: 200px;
+            width: auto;
+            height: auto;
+            margin-bottom: 8em;
+            margin-top: 8em;
+        }
+        
+        #scan-button {
+            padding: 1em 2em;
+            font-size: 1.2em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1em;
+        }
+        
+        #scan-button .loader {
+            display: none;
+        }
+        
+        #placeholder {
+            width: 300px;
+            height: 200px;
+            background-color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 1em;
+        }
+        
+        .toggle-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1em;
+        }
+        
+        .toggle-button input {
+            display: none;
+        }
+        
+        .toggle-button label {
+            background-color: #ddd;
+            border-radius: 20px;
+            padding: 0.5em 1em;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .toggle-button label:before {
+            content: "Demo Video";
+            color: #555;
+            transition: 0.2s;
+        }
+        
+        .toggle-button input:checked + label {
+            background-color: #4CAF50;
+        }
+        
+        .toggle-button input:checked + label:before {
+            content: "Live";
+            color: white;
+        }
+        
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-right: 1em;
+            width: 10em;
+        }
+
+        .demo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stats-and-video {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            font-size: .8em;
+            margin-bottom: 1em;
+        }
+        
+        .stat-item label {
+            display: flex;
+            margin-top: 0.5em;
+            font-size: 1.2em;
+            margin-right: .5em;
+            width: 10em;
+            justify-content: flex-end;
+        }
+        .stat-item div {
+            margin-top: 0.5em;
+            font-size: 1.2em;
+            margin-right: .5em;
+            width: 8em;
+        }
+
+        #inference_example {
+            max-width: 300px;
+            max-height: 200px;
+            width: auto;
+            height: auto;
+        }
+        
+        @keyframes spin {
+             0% { transform: rotate(0deg); }
+             100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>Scanner</h1>
+        <div class="stats-and-video">
+        <div class="stats-container">
+            <div class="stat-item">
+                <label for="num-stat"># Images: </label>
+                <div id="num-stat">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="capture-stat">Capture Time: </label>
+                <div id="capture-stat">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="encode-stat">Encoding Time: </label>
+                <div id="encode-stat">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="size-stat">Upload Size: </label>
+                <div id="size-stat">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="upload-time-stat">Upload Time: </label>
+                <div id="upload-time">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="upload-num"># Images Uploaded: </label>
+                <div id="upload-num">0</div>
+            </div>
+        </div>
+        <div id="placeholder"> <!-- Added the grey rectangle -->
+            <video id="video-player" autoplay loop class="logo"></video>
+        </div>
+    </div>
+        <div class="toggle-button">
+            <input type="checkbox" id="toggle" onchange="toggleMode()">
+            <label for="toggle"></label>
+        </div>
+        <button id="scan-button" onclick="toggleScan()">Start Scan</button>
+    </div>
+    <div class="demo-container">
+        <h1>Results</h1>
+        <div class="stats-and-video">
+        <div class="stats-container">
+            <div class="stat-item">
+                <label for="inference-stat">Inference Number: </label>
+                <div id="inference-num">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="inference-stat">Error Number: </label>
+                <div id="error-num">0</div>
+            </div>
+        </div>
+        <div id="placeholder">
+            <image id="inference_example" /> <!-- Replace this image -->
+        </div>
+    </div>
+    </div>
+    <script>
+        var scanButton = document.getElementById('scan-button');
+        var videoPlayer = document.getElementById('video-player');
+        var placeholder = document.getElementById('placeholder');
+        var captureStat = document.getElementById('capture-stat');
+        var sizeStat = document.getElementById('size-stat');
+        var numStat = document.getElementById('num-stat');
+        var encodeStat = document.getElementById('encode-stat');
+
+        var uploadNum = document.getElementById('upload-num');
+        var errorNum = document.getElementById('error-num');
+        var inferenceNum = document.getElementById('inference-num');
+        var uploadTime = document.getElementById('upload-time');
+
+        var scanActive = false;
+        var scanInterval;
+        
+        function startScan() {
+            fetch(toggle.checked ? '/scan' : '/scan_demo')
+                .then(response => response.blob())  // Convert the response to a Blob object
+                .then(blob => {
+                    // Create an object URL from the Blob
+                    if (scanActive) {
+                        startScan();
+                    } else {
+                        scanButton.textContent = 'Start Scan';
+                    }
+                    const videoUrl = URL.createObjectURL(blob);
+                    console.log(videoUrl)
+                    videoPlayer.src = videoUrl;
+                    videoPlayer.style.display = 'block';
+                    // placeholder.style.display = 'none';  // Hide the placeholder
+                    // Release the object URL when the video has ended
+                    videoPlayer.addEventListener('ended', () => {
+                        URL.revokeObjectURL(videoUrl);
+                    });
+                    stats()
+                });
+        }
+
+        function stats() {
+            fetch('/stats')
+                .then(response => response.json())  // Assuming the response is in JSON format
+                .then(data => {
+                        // Update the stats with the received data
+                        captureStat.textContent = data.capture_time || '0';
+                        encodeStat.textContent = data.encode_time || '0';
+                        // uploadStat.textContent = data.upload || '0';
+                        sizeStat.textContent = data.file_size || '0';
+                        numStat.textContent = data.images_num || '0';
+                        uploadNum.textContent = data.upload_num || '0';
+                        errorNum.textContent = data.error_num || '0';
+                        inferenceNum.textContent = data.inference_num || '0';
+                        uploadTime.textContent = data.upload_time || '0';
+                        // document.getElementById('inference_example').src = 'data:image/jpg;base64,' + data.image_data;
+                })
+                .catch(error => {
+                    console.error('Scan request failed:', error);
+                });
+        }
+        
+        function toggleScan() {
+            if (scanActive) {
+                scanActive = false;
+                scanButton.textContent = 'Start Scan';
+            } else {
+                scanActive = true;
+                scanButton.textContent = 'Stop Scan';
+                startScan();
+            }
+        }
+        
+    </script>
+</body>
+</html>
