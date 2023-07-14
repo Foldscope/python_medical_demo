@@ -171,7 +171,11 @@
                 <div id="size-stat">0</div>
             </div>
             <div class="stat-item">
-                <label for="upload-num"># Uploaded: </label>
+                <label for="upload-time-stat">Upload Time: </label>
+                <div id="upload-time">0</div>
+            </div>
+            <div class="stat-item">
+                <label for="upload-num"># Images Uploaded: </label>
                 <div id="upload-num">0</div>
             </div>
         </div>
@@ -190,14 +194,13 @@
         <div class="stats-and-video">
         <div class="stats-container">
             <div class="stat-item">
-                <label for="inference-stat">Inference Time: </label>
-                <div id="inference-time">0</div>
-            </div>
-            <div class="stat-item">
                 <label for="inference-stat">Inference Number: </label>
                 <div id="inference-num">0</div>
             </div>
-            
+            <div class="stat-item">
+                <label for="inference-stat">Error Number: </label>
+                <div id="error-num">0</div>
+            </div>
         </div>
         <div id="placeholder">
             <image id="inference_example" /> <!-- Replace this image -->
@@ -214,8 +217,9 @@
         var encodeStat = document.getElementById('encode-stat');
 
         var uploadNum = document.getElementById('upload-num');
+        var errorNum = document.getElementById('error-num');
         var inferenceNum = document.getElementById('inference-num');
-        var inferenceTime = document.getElementById('inference-time');
+        var uploadTime = document.getElementById('upload-time');
 
         var scanActive = false;
         var scanInterval;
@@ -248,15 +252,16 @@
                 .then(response => response.json())  // Assuming the response is in JSON format
                 .then(data => {
                         // Update the stats with the received data
-                        captureStat.textContent = data.capture || '0';
-                        encodeStat.textContent = data.encode || '0';
+                        captureStat.textContent = data.capture_time || '0';
+                        encodeStat.textContent = data.encode_time || '0';
                         // uploadStat.textContent = data.upload || '0';
-                        sizeStat.textContent = data.size || '0';
+                        sizeStat.textContent = data.file_size || '0';
                         numStat.textContent = data.images_num || '0';
                         uploadNum.textContent = data.upload_num || '0';
+                        errorNum.textContent = data.error_num || '0';
                         inferenceNum.textContent = data.inference_num || '0';
-                        inferenceTime.textContent = data.inference_time || '0';
-                        document.getElementById('inference_example').src = 'data:image/jpg;base64,' + data.image_data;
+                        uploadTime.textContent = data.upload_time || '0';
+                        // document.getElementById('inference_example').src = 'data:image/jpg;base64,' + data.image_data;
                 })
                 .catch(error => {
                     console.error('Scan request failed:', error);
