@@ -12,6 +12,7 @@ from urllib.parse import unquote
 import logging
 from pathlib import Path
 import shutil
+import glob
 import random
 import sys
 from collections import deque
@@ -138,11 +139,20 @@ def create_video(batch_num, row, my_hash):
     start_time = time.time()  # Start timing the transcoding process
 
     title = os.path.join(home, f"videos/1_{str(uuid.uuid4())}_{batch_num}.mp4")
+    
+
+    input_images_file = os.path.join(home, f'image_locations/{row}_images.txt')
+
+    with open(input_images_file, 'w') as f:
+        for filename in Path(home).glob(f"tmp_images/{row}_*.jpg"):
+            f.write(f"file '{filename}'\n")
 
     ffmpeg_location = os.path.join(home, f"ffmpeg")
 
-    command = f"{ffmpeg_location} -y -r 1 -pattern_type glob -i 'tmp_images/{row}_*.jpg' -c:v libx264 -preset superfast -b:v 300k " + title
+    command = f"{ffmpeg_location} -y -r 1 -f concat -safe 0 -i {input_images_file} -c:v libx264 -preset superfast -b:v 300k " + title
+
     subprocess.run(command, shell=True, stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    # subprocess.run(command, shell=True)
     if my_hash != scan_hash:
         return
     delete_images(row)
@@ -210,7 +220,8 @@ def copy_images(batch_num, row, my_hash):
                 return
             file_name = f"sample_{str(random.randint(1, 35)).zfill(4)}.jpeg"
             source_path = os.path.join(home, f"sample_video", file_name)
-            destination_path = os.path.join(folder_path, f"{row}_{i + 1}.jpg")
+            # print("Creating images for row " + str(row))
+            destination_path = os.path.join(folder_path, f"{row}_{str(i + 1).zfill(2)}.jpg")
             if my_hash != scan_hash:
                 return
             shutil.copyfile(source_path, destination_path)
@@ -285,7 +296,7 @@ def run_result_collector(my_hash):
                     pipeline_speed = "Down"
 
             else:
-                print("Got results for " + str(pending_result["batch"]))
+                # print("Got results for " + str(pending_result["batch"]))
                 global images_processed, percent_images_processed
                 end_time = time.time()
 
