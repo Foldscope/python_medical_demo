@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+    <title>Dashboard</title>
+
+    <style>
+      #loader {
+        transition: all 0.3s ease-in-out;
+        opacity: 1;
+        visibility: visible;
+        position: fixed;
+        height: 100vh;
+        width: 100%;
+        background: #fff;
+        z-index: 90000;
+      }
+
+      #loader.fadeOut {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        position: absolute;
+        top: calc(50% - 20px);
+        left: calc(50% - 20px);
+        background-color: #333;
+        border-radius: 100%;
+        -webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+        animation: sk-scaleout 1.0s infinite ease-in-out;
+      }
+
+
+      @-webkit-keyframes sk-scaleout {
+        0% { -webkit-transform: scale(0) }
+        100% {
+          -webkit-transform: scale(1.0);
+          opacity: 0;
+        }
+      }
+
+      @keyframes sk-scaleout {
+        0% {
+          -webkit-transform: scale(0);
+          transform: scale(0);
+        } 100% {
+          -webkit-transform: scale(1.0);
+          transform: scale(1.0);
+          opacity: 0;
+        }
+      }
+    </style>
+  <script defer="defer" src="main.js"></script></head>
+  <body class="app">
+    
+    
+    
+
+    
+    
+    <div id="loader">
+      <div class="spinner"></div>
+    </div>
+
+    <script>
+      window.addEventListener('load', function load() {
+        const loader = document.getElementById('loader');
+        var tableBody = document.getElementById('results_table_1');
+        // Remove all existing rows from the table
+        setTimeout(function() {
+          loader.classList.add('fadeOut');
+          let heartbeatInterval;
+          if (!heartbeatInterval) {
+            console.log("Starting heartbeat counter")
+            heartbeatInterval = setInterval(sendHeartbeat, 200);
+          }
+        }, 300);
+      });
+    </script>
+
+    
+    
+    <div>
+      <!-- #Left Sidebar ==================== -->
+      <div class="sidebar">
+        <div class="sidebar-inner">
+          <!-- ### $Sidebar Header ### -->
+          <div class="sidebar-logo">
+            <div class="peers ai-c fxw-nw">
+              <div class="peer peer-greed">
+                <a class="sidebar-link td-n" href="index.html">
+                  <div class="peers ai-c fxw-nw">
+                    <div class="peer">
+                      <div class="logo">
+                        <img src="assets/static/images/logo.png" alt="">
+                      </div>
+                    </div>
+                    <div class="peer peer-greed">
+                      <h5 class="lh-1 mB-0 logo-text">Foldscope</h5>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="peer">
+                <div class="mobile-toggle sidebar-toggle">
+                  <a href="" class="td-n">
+                    <i class="ti-arrow-circle-left"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ### $Sidebar Menu ### -->
+          <ul class="sidebar-menu scrollable pos-r">
+            <li class="nav-item mT-30 actived">
+              <a class="sidebar-link" href="index.html">
+                <span class="icon-holder">
+                  <i class="c-blue-500 ti-home"></i>
+                </span>
+                <span class="title">Dashboard</span>
+              </a>
+            </li>
+            
+          </ul>
+        </div>
+      </div>
+
+      <!-- #Main ============================ -->
+      <div class="page-container">
+        <!-- ### $Topbar ### -->
+        <div class="header navbar">
+          <div class="header-container">
+            <ul class="nav-left">
+              <li>
+                <a id="sidebar-toggle" class="sidebar-toggle" href="javascript:void(0);">
+                  <i class="ti-menu"></i>
+                </a>
+              </li>
+            </ul>
+            <ul class="nav-right">
+              <li class="notifications">
+                <div class="form-switch" style="min-height: 65px; display: flex; align-items: center;">
+                  <span style="margin-right: 60px;">Demo Data</span>
+                  <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault">
+                </div>
+              </li>
+              <li class="notifications" id="reload-scan">
+                <a href="#" class="dropdown-toggle no-after" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i id="heartbeat-icon" class="ti-reload"></i>
+                </a>
+              </li>
+              <li class="notifications" id="play-pause">
+                <a href="#" class="dropdown-toggle no-after" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i id="pause-toggle" class="ti-control-play"></i>
+                </a>
+              </li>
+              
+              
+              
+              <script>
+                let started = false;
+                let paused = false;
+                var live_image_hashes = [];
+
+                // Get the icon element
+                const reloadIcon = document.getElementById('reload-scan');
+                const pauseButton = document.getElementById('play-pause');
+                const pauseIcon = document.getElementById('pause-toggle')
+
+                function pauseToggle() {
+                  if(!started){
+                    // console.log("Toggling pause, but actually you need to start the scan")
+                    startScan()
+                  } else {
+                    // console.log("Calling pause")
+                    // console.log("The local old state was ")
+                    // console.log(paused)
+                    fetch('/api/pauseToggle')
+                      .then(response => response.json())
+                      .then(data => {
+                        paused = data["paused"]
+                        // console.log("Server pause status (and local status) is now ")
+                        // console.log(paused)
+                        if(paused) {
+                          set_paused()
+                        } else {
+                          set_running()
+                        }
+                      })
+                  }
+                  
+                }
+              
+                // Function to toggle the icon
+                function set_running() {
+                    pauseIcon.classList.remove('ti-control-play');
+                    pauseIcon.classList.add('ti-control-pause');
+                }
+
+                function set_paused() {
+                    pauseIcon.classList.remove('ti-control-pause');
+                    pauseIcon.classList.add('ti-control-play');
+                }
+
+                function startScan() {
+                  // console.log("I INTEND TO RESET THE SCANNER")
+                  if(started && !paused) {
+                    paused = true
+                  } else {
+                    set_running()
+                  }
+
+                  
+                  for(var i = 0; i < thread_count; i++) {
+                    const row = document.getElementById('row' + i)
+                    while (row.firstChild) {
+                      row.removeChild(row.firstChild);
+                    }
+                  }
+                  
+                  var tableBody = document.getElementById('results_table_1');
+                  while (tableBody.firstChild) {
+                    tableBody.removeChild(tableBody.firstChild);
+                  }
+                  for(var i = 0; i < 6; i++) {
+                    var blank = document.createElement('tr');
+                    tableBody.appendChild(blank);
+                  }
+                  
+                  // const images = document.getElementsByClassName('rectangle');
+                  // while(images.length > 0){
+                  //     images[0].parentNode.removeChild(images[0]);
+                  // }
+                  // console.log("Ok calling fetch")
+                  fetch('/api/start')
+                    .then(response => {
+                      // console.log("Restarted, unpausing")
+                      started = true
+                      paused = false
+                    })
+                    .catch(error => {
+                      // console.error("--- User error ---")
+                      console.error(error)
+                      // console.error("--- User error ---")
+                    });
+                }
+
+                let first_loaded = false
+                let thread_count = 1
+              
+                // Function to make the AJAX request
+                function sendHeartbeat() {
+
+                  if(paused){
+                    // console.log("Skipping heartbeat bc paused")
+                    return
+                  }
+
+                  // console.log("Fetching heartbeat")
+                  fetch('/api/heartbeat')
+                    .then(response => response.json())
+                    .then(data => {
+                      // console.log("Dealing with hb")
+                      var tableBody = document.getElementById('results_table_1');
+                      if(!first_loaded) {
+                        first_loaded = true
+                        while (tableBody.firstChild) {
+                          tableBody.removeChild(tableBody.firstChild);
+                        }
+                        for(var i = 0; i < 6; i++) {
+                          var row = document.createElement('tr');
+                          tableBody.appendChild(row);
+                        }
+                        thread_count = data["threads"]
+                        const rowParent = document.getElementById("rowParent")
+                        for(var i = 0; i < data["threads"]; i++) {
+                          live_image_hashes.push(0)
+                          const childDiv = document.createElement('div');
+                          childDiv.classList.add('row', 'nowrap', 'flex-fill', 'overflow-auto', 'd-flex');
+                          childDiv.id = 'row' + i;
+                          childDiv.innerHTML = '<div class="placeholder"></div>';
+                          rowParent.appendChild(childDiv);
+                        }
+                      }
+                      if(data["paused"]) {
+                        // console.log("Tried to get heartbeat but server is paused")
+                        paused = true
+                        if(data["running"]) {
+                          started = true
+                        }
+                        set_paused()
+                        return
+                      } else {
+                        paused = false
+                        started = true
+                        set_running()
+                      }
+                      data["results_table"].forEach(function(rowData) {
+                        var row = document.getElementById(rowData.batch);
+
+                        // If a row with this id does not exist, create one
+                        if (!row) {
+                          row = document.createElement('tr');
+                          row.id = rowData.batch;
+                          tableBody.appendChild(row);
+                        }
+
+                        // Update the cells in the row or create them if they don't exist
+                        var cells = row.getElementsByTagName('td');
+                        var cellData = [
+                          { text: rowData.batch, style: "width: 20%;", className: 'fw-600' },
+                          { text: rowData.batch_size, style: "width: 15%;" },
+                          { text: rowData.status, style: "width: 20%;", className: rowData.status == "Collecting" ? 'badge bgc-grey-50 c-grey-700 p-10 lh-0 tt-c rounded-pill' : rowData.status == "Encoding" ? 'badge bgc-yellow-50 c-yellow-700 p-10 lh-0 tt-c rounded-pill' : rowData.status == "Uploading" ? 'badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill' : rowData.status == "Running Inference" ? 'badge bgc-green-50 c-green-700 p-10 lh-0 tt-c rounded-pill' : rowData.status == "Success" ? 'badge bgc-blue-50 c-blue-700 p-10 lh-0 tt-c rounded-pill' : 'badge bgc-red-50 c-red-700 p-10 lh-0 tt-c rounded-pill'},
+                          { text: rowData.file_size, style: "width: 15%;", link: rowData.video_location },
+                          { text: rowData.rbc_count, style: "width: 20%;" },
+                          { text: rowData.inference_location ? rowData.inference_location != "Error" ? "Inference" : "Error" : "", style: "width: 10%;", className: rowData.inference_location != "Error" ? "text-success" : "", link: rowData.inference_location != "Error" ? rowData.inference_location : ""}
+                        ];
+
+                        cellData.forEach(function(cellData, index) {
+                          var cell = cells[index];
+
+                          // If a cell at this index does not exist, create one
+                          if (!cell) {
+                            cell = document.createElement('td');
+                            row.appendChild(cell);
+                          }
+
+                          // Update the cell content and style
+                          cell.style = cellData.style;
+
+
+                          if(cellData.text == "Error" && index != 2) {
+                            cell.style.color = "red";
+                          }
+
+                          // If cellData has a link property, create a link in the cell
+                          if (cellData.link) {
+                            const link = document.createElement("a");
+                            link.setAttribute('href', cellData.link);
+                            link.textContent = cellData.text;
+                            cell.textContent = '';
+                            cell.appendChild(link);
+                          } else {
+                            cell.textContent = cellData.text;
+                          }
+
+                          if (cellData.className) {
+                            // If a className is defined, wrap the cell content in a span
+                            var span = document.createElement('span');
+                            span.className = cellData.className;
+                            span.textContent = cell.textContent;
+                            cell.textContent = ''; // remove the current cell text
+                            cell.appendChild(span);
+                          }
+                        });
+
+                      });
+
+                      for(var i = 0; i < thread_count; i++) {
+                        if(data["live_scan_table"][i]["images"].length != 0) {
+                          const row = document.getElementById('row' + String(i));
+                          if(data["live_scan_table"][i]["hash"] != live_image_hashes) {
+                            const toDelete = row.getElementsByClassName('rectangle');
+                            while(toDelete.length > 0){
+                              toDelete[0].parentNode.removeChild(toDelete[0]);
+                            }
+                          }
+                          const images = row.getElementsByClassName('rectangle');
+                          for(var j = 0; j < data["live_scan_table"][i]["images"].length; j++) {
+                            if (j > images.length) {
+                              const imageDiv = document.createElement('div');
+                              imageDiv.classList.add('rectangle');
+                              imageDiv.style.backgroundImage = 'url(data:image/jpg;base64,' + data["live_scan_table"][i]["images"][j] + ')';
+                              const overlayDiv = document.createElement('div');
+                              overlayDiv.classList.add('overlay');
+                              overlayDiv.textContent = 'Encoding';
+                              imageDiv.appendChild(overlayDiv);
+                              const row = document.getElementById('row' + String(i));
+                              row.appendChild(imageDiv);
+                            }
+                          }
+                        }
+                        if (data["live_scan_table"][i]["status"] == "encoding"){
+                          const row = document.getElementById('row' + String(i));
+                          const overlays = row.getElementsByClassName('overlay');
+
+                          for(let i = 0; i < overlays.length; i++) {
+                            overlays[i].style.visibility = 'visible';
+                            overlays[i].textContent = "Encoding";
+                            // overlays[i].style.backgroundColor = "yellow";
+                            overlays[i].classList = "overlay bgc-yellow-50 c-yellow-700 badge p-6 lh-0 tt-c rounded-pill"
+                          }
+                        } else if (data["live_scan_table"][i]["status"] == "uploading"){
+                          const row = document.getElementById('row' + String(i));
+                          const overlays = row.getElementsByClassName('overlay');
+
+                          for(let i = 0; i < overlays.length; i++) {
+                            overlays[i].style.visibility = 'visible';
+                            overlays[i].textContent = "Uploading";
+                            overlays[i].classList = "overlay bgc-orange-50 c-orange-700 badge p-6 lh-0 tt-c rounded-pill"
+                          }
+                        } else if (data["live_scan_table"][i]["status"] == "done"){
+                          const row = document.getElementById('row' + String(i));
+                          const overlays = row.getElementsByClassName('overlay');
+
+                          for(let i = 0; i < overlays.length; i++) {
+                            overlays[i].style.visibility = 'visible';
+                            overlays[i].textContent = "Done";
+                            overlays[i].classList = "overlay bgc-green-50 c-green-700 badge p-6 lh-0 tt-c rounded-pill"
+                          }
+                        }
+                        
+                      }
+
+                      // if(data["results_table"]["status"] != "waiting") {
+
+                      // }
+
+                      Object.keys(data).forEach(key => {
+                        // Get the element with the matching key
+                        const element = document.getElementById(key);
+                        if (element) {
+                          // Update the element's text content with the corresponding response value
+                          element.textContent = data[key]["value"];
+
+                          if(data[key]["styling"] == "per_image_stats") {
+                            // Remove all existing background color and text color classes from the element
+                            element.classList.remove('bgc-red-50', 'c-red-500', 'bgc-green-50', 'c-green-500', 'bgc-grey-50', 'c-grey-500');
+
+                            // Determine the new background color and text color classes based on the response value
+                            let bgClass, textClass;
+
+                            if (data[key]["value"] === 'Waiting') {
+                              bgClass = 'bgc-grey-50';
+                              textClass = 'c-grey-500';
+                            } else if (data[key]["value"] === 'Down') {
+                              bgClass = 'bgc-red-50';
+                              textClass = 'c-red-500';
+                            } else {
+                              bgClass = 'bgc-green-50';
+                              textClass = 'c-green-500';
+                            }
+
+                            // Add the new background color and text color classes to the element
+                            element.classList.add(bgClass);
+                            element.classList.add(textClass);
+                          } else if(data[key]["styling"] == "percentage_bar") {
+
+                            const percent_bar = document.getElementById(key + "_bar");
+                            percent_bar.style.width = data[key]["value"];
+
+                            const percent_hidden_text = document.getElementById(key + "_hidden_text");
+                            percent_hidden_text.textContent = data[key]["value"];
+                          }
+                        }
+                      });
+
+                      // console.log("Done with hb")
+                    })
+                    .catch(error => {
+                      console.error(error)
+                    });
+                }
+              
+                // Attach the click event listener to the icon
+                reloadIcon.addEventListener('click', startScan);
+                pauseButton.addEventListener('click', pauseToggle);
+              </script>
+              
+            </ul>
+          </div>
+        </div>
+
+        <!-- ### $App Screen Content ### -->
+        <main class="main-content bgc-grey-100">
+          <div id="mainContent">
+            <div class="row gap-20 masonry pos-r">
+              <div class="masonry-sizer col-md-6"></div>
+              <div class="masonry-item w-100">
+                <div class="row gap-20">
+                  <!-- #Toatl Visits ==================== -->
+                  <div class="col-md-2">
+                    <div class="layers bd bgc-white p-20">
+                      <div class="layer w-100 mB-10">
+                        <h6 class="lh-1">Capture Speed</h6>
+                      </div>
+                      <div class="layer w-100">
+                        <div class="peers ai-sb fxw-nw">
+                          <div class="peer">
+                            <span id="capture_speed" class="d-ib lh-0 va-m fw-600 bdrs-10em pX-15 pY-15 bgc-grey-50 c-grey-500">Waiting</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- #Total Page Views ==================== -->
+                  <div class="col-md-2">
+                    <div class="layers bd bgc-white p-20">
+                      <div class="layer w-100 mB-10">
+                        <h6 class="lh-1">Encoding Speed</h6>
+                      </div>
+                      <div class="layer w-100">
+                        <div class="peers ai-sb fxw-nw">
+                          <div class="peer">
+                            <span id="encoding_speed" class="d-ib lh-0 va-m fw-600 bdrs-10em pX-15 pY-15 bgc-grey-50 c-grey-500">Waiting</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- #Unique Visitors ==================== -->
+                  <div class="col-md-2">
+                    <div class="layers bd bgc-white p-20">
+                      <div class="layer w-100 mB-10">
+                        <h6 class="lh-1">Upload Speed</h6>
+                      </div>
+                      <div class="layer w-100">
+                        <div class="peers ai-sb fxw-nw">
+                          <div class="peer">
+                            <span id="upload_speed" class="d-ib lh-0 va-m fw-600 bdrs-10em pX-15 pY-15 bgc-grey-50 c-grey-500">Waiting</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-2">
+                    <div class="layers bd bgc-white p-20">
+                      <div class="layer w-100 mB-10">
+                        <h6 class="lh-1">Client Pipeline</h6>
+                      </div>
+                      <div class="layer w-100">
+                        <div class="peers ai-sb fxw-nw">
+                          <div class="peer">
+                            <span id="client_speed" class="d-ib lh-0 va-m fw-600 bdrs-10em pX-15 pY-15 bgc-grey-50 c-grey-500">Waiting</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- #Bounce Rate ==================== -->
+                  <div class="col-md-2">
+                    <div class="layers bd bgc-white p-20">
+                      <div class="layer w-100 mB-10">
+                        <h6 class="lh-1">Inference Speed</h6>
+                      </div>
+                      <div class="layer w-100">
+                        <div class="peers ai-sb fxw-nw">
+                          <div class="peer">
+                            <span id="inference_speed" class="d-ib lh-0 va-m fw-600 bdrs-10em pX-15 pY-15 bgc-grey-50 c-grey-500">Waiting</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-2">
+                    <div class="layers bd bgc-white p-20">
+                      <div class="layer w-100 mB-10">
+                        <h6 class="lh-1">Entire Pipeline</h6>
+                      </div>
+                      <div class="layer w-100">
+                        <div class="peers ai-sb fxw-nw">
+                          <div class="peer">
+                            <span id="pipeline_speed" class="d-ib lh-0 va-m fw-600 bdrs-10em pX-15 pY-15 bgc-grey-50 c-grey-500">Waiting</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+              <div class="masonry-item col-12">
+                <!-- #Site Visits ==================== -->
+                <div class="bd bgc-white">
+                  <div class="peers fxw-nw@lg+ ai-s">
+                    <div class="peer peer-greed w-70p@lg+ w-100@lg- p-20">
+                      <div class="layers">
+                          <div class="layer w-100 mB-10">
+                              <h6 class="lh-1">Live Scan Progress</h6>
+                          </div>
+                          <div id="rowParent" class="layer w-100 d-flex flex-column h-100">
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <style>
+                      .nowrap {
+                        height: calc(20%);
+                        flex-wrap: nowrap;
+                      }
+                      .placeholder {
+                          background-color: #0000;
+                          margin: 3px;
+                          margin-left: -6px;
+                          margin-right: -6px;
+                          flex: 0 0 auto;
+                          height: 48.5px;
+                          width: 1px;
+                      }
+                      .rectangle {
+                          background-position: center;
+                          background-repeat: no-repeat;
+                          background-size: cover;
+                          background-color: #000;
+
+                          margin: 3px;
+                          flex: 0 0 auto;
+                          height: 48.5px;
+                          width: 67px;
+                        }
+                        .overlay {
+                          bottom: 0;
+                          font-size: 0.5em; /* smaller font size */
+                          color: white; /* white text */
+                          width: 100%;
+                          padding: 6px;
+                          padding-left: 8px;
+                          padding-right: 8px;
+                          text-align: center;
+                          border-radius: 7px;
+                          background-color: purple;
+                          margin-top: 28px;
+                          visibility: hidden;
+
+                          display: flex;
+                          justify-content: center;
+                          align-items: center;
+                      }
+                      .table-responsive {
+                        position: relative;
+                      }
+
+                      .table-responsive thead {
+                        position: sticky;
+                        top: 0;
+                      }
+
+                      .table-responsive tbody {
+                        display: block;
+                        max-height: 200px;
+                        overflow-y: scroll;
+                      }
+
+                      .table-responsive tbody tr {
+                        display: table;
+                        width: 100%;
+                        /* table-layout: fixed; */
+                      }
+
+                  </style>
+                  
+                  
+                  
+                
+                    
+                    <div class="peer bdL p-20 w-30p@lg+ w-100p@lg-">
+                      <div class="layers">
+                        <div class="layer w-100">
+                          
+                          <div class="layers">
+                            <div class="layer w-100">
+                              <h5 id="images_captured" class="mB-5">0</h5>
+                              <small class="fw-600 c-grey-700">Images Captured</small>
+                              <span id="percent_images_captured" class="pull-right c-grey-600 fsz-sm">0%</span>
+                              <div class="progress mT-10">
+                                <div id="percent_images_captured_bar" class="progress-bar bgc-deep-purple-500" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width:0%;"> <span id="percent_images_captured_hidden_text" class="visually-hidden">0% Complete</span></div>
+                              </div>
+                            </div>
+                            <div class="layer w-100 mT-15">
+                              <h5 id="images_encoded" class="mB-5">0</h5>
+                              <small class="fw-600 c-grey-700">Images Encoded</small>
+                              <span id="percent_images_encoded" class="pull-right c-grey-600 fsz-sm">0%</span>
+                              <div class="progress mT-10">
+                                <div id="percent_images_encoded_bar" class="progress-bar bgc-green-500" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width:0%;"> <span id="percent_images_encoded_hidden_text" class="visually-hidden">0% Complete</span></div>
+                              </div>
+                            </div>
+                            <div class="layer w-100 mT-15">
+                              <h5 id="images_uploaded" class="mB-5">0</h5>
+                              <small class="fw-600 c-grey-700">Images Uploaded</small>
+                              <span id="percent_images_uploaded" class="pull-right c-grey-600 fsz-sm">0%</span>
+                              <div class="progress mT-10">
+                                <div id="percent_images_uploaded_bar" class="progress-bar bgc-light-blue-500" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width:0%;"> <span id="percent_images_uploaded_hidden_text" class="visually-hidden">0% Complete</span></div>
+                              </div>
+                            </div>
+                            <div class="layer w-100 mT-15">
+                              <h5 id="images_processed" class="mB-5">0</h5>
+                              <small class="fw-600 c-grey-700">Images Processed</small>
+                              <span id="percent_images_processed" class="pull-right c-grey-600 fsz-sm">0%</span>
+                              <div class="progress mT-10">
+                                <div id="percent_images_processed_bar" class="progress-bar bgc-blue-grey-500" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width:0%;"> <span id="percent_images_processed_hidden_text" class="visually-hidden">0% Complete</span></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+                <div class="masonry-item col-12">
+                <!-- #Sales Report ==================== -->
+                <div class="bd bgc-white">
+                  <div class="layers">
+                    <div class="layer w-100 p-20">
+                      <h6 class="lh-1">Results</h6>
+                    </div>
+                    <div class="layer w-100">
+                      <div class="table-responsive p-20">
+                        <table class="table">
+                          <colgroup>
+                            <col style="width: 20%;">
+                            <col style="width: 15%;">
+                            <col style="width: 20%;">
+                            <col style="width: 15%;">
+                            <col style="width: 20%;">
+                            <col style="width: 10%;">
+                          </colgroup>
+                          <thead>
+                            <tr>
+                              <th class="bdwT-0">Image batch</th>
+                              <th class="bdwT-0">Batch Size</th>
+                              <th class="bdwT-0">Status</th>
+                              <th class="bdwT-0">Video</th>
+                              <th class="bdwT-0">RBC Count (Avg)</th>
+                              <th class="bdwT-0">Sample</th>
+                            </tr>
+                          </thead>
+                        </table>
+                        <div class="body-container">
+                          <table class="table">
+                            <tbody id="results_table_1">
+                              <tr>
+                                <td class="fw-600">Batch #1</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-green-50 c-green-700 p-10 lh-0 tt-c rounded-pill">Completed</span> </td>
+                                <td>1.5 MB</td>
+                                <td>214</td>
+                                <td><span class="text-success">Link</span></td>
+                              </tr>
+                              <tr>
+                                <td class="fw-600">Batch #2</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill">Running Inference</span></td>
+                                <td>1.24 MB</td>
+                                <td></td>
+                                <td><span class="text-success"></span></td>
+                              </tr>
+                              <tr>
+                                <td class="fw-600">Batch #2</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill">Running Inference</span></td>
+                                <td>1.24 MB</td>
+                                <td></td>
+                                <td><span class="text-success"></span></td>
+                              </tr>
+                              <tr>
+                                <td class="fw-600">Batch #2</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill">Running Inference</span></td>
+                                <td>1.24 MB</td>
+                                <td></td>
+                                <td><span class="text-success"></span></td>
+                              </tr>
+                              <tr>
+                                <td class="fw-600">Batch #2</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill">Running Inference</span></td>
+                                <td>1.24 MB</td>
+                                <td></td>
+                                <td><span class="text-success"></span></td>
+                              </tr>
+                              <tr>
+                                <td class="fw-600">Batch #2</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill">Running Inference</span></td>
+                                <td>1.24 MB</td>
+                                <td></td>
+                                <td><span class="text-success"></span></td>
+                              </tr>
+                              <tr>
+                                <td class="fw-600">Batch #2</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill">Running Inference</span></td>
+                                <td>1.24 MB</td>
+                                <td></td>
+                                <td><span class="text-success"></span></td>
+                              </tr>
+                              <tr>
+                                <td class="fw-600">Batch #2</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill">Running Inference</span></td>
+                                <td>1.24 MB</td>
+                                <td></td>
+                                <td><span class="text-success"></span></td>
+                              </tr>
+                              <tr>
+                                <td class="fw-600">Batch #2</td>
+                                <td>8</td>
+                                <td><span class="badge bgc-orange-50 c-orange-700 p-10 lh-0 tt-c rounded-pill">Running Inference</span></td>
+                                <td>1.24 MB</td>
+                                <td></td>
+                                <td><span class="text-success"></span></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>                 
+                  </div>
+                </div>
+              </div>
+              
+              
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
